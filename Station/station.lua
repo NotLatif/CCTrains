@@ -1,3 +1,25 @@
+-- reboot/start intersections
+local pcs = { peripheral.find("computer") }
+
+if #pcs == 0 then
+    print("ERRORE - nessuna stazione trovata")
+    return
+end
+
+for _, pc in ipairs(pcs) do
+    if pc.isOn() then
+        pc.reboot()
+        print("Rebooting ", pc.getLabel())
+    else
+        pc.turnOn()
+        print("Turning on ", pc.getLabel())
+    end
+end
+
+print("Waiting for all computers to reboot...")
+os.sleep(5) -- wait for all computers to reboot
+print("Discovering intersections...")
+
 local config = require "config"
 
 local m1, m2 = peripheral.find("modem")
@@ -93,9 +115,9 @@ discoverIntersections()
 
 -- testing (debug)
 for key, value in pairs(intersections) do
-    lan.transmit(value, 301, {name = key, open = true})
+    lan.transmit(value, 301, {name = key, direction = "left"})
     os.sleep(1)
-    lan.transmit(value, 301, {name = key, open = false})
+    lan.transmit(value, 301, {name = key, direction = "right"})
 end
 
 
