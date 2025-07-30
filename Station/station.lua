@@ -1,3 +1,21 @@
+local function serialize(tbl)
+    local result = "{"
+    for k, v in pairs(tbl) do
+        local key = tostring(k)
+        local value
+        if type(v) == "table" then
+            value = serialize(v)
+        elseif type(v) == "string" then
+            value = '"' .. v .. '"'
+        else
+            value = tostring(v)
+        end
+        result = result .. key .. "=" .. value .. ","
+    end
+    result = result .. "}"
+    return result:gsub("\n", "")
+end
+
 -- reboot/start intersections
 local pcs = { peripheral.find("computer") }
 
@@ -108,20 +126,22 @@ local function discoverIntersections()
 
     local count = 0
     for _ in pairs(intersections) do count = count + 1 end
-    print("Discovered Stations:".. count)
+    print("Discovered intersections:", serialize(intersections))
 end
 
 discoverIntersections()
 
 -- testing (debug)
-for key, value in pairs(intersections) do
-    lan.transmit(value, 301, {name = key, direction = "left"})
-    os.sleep(1)
-    lan.transmit(value, 301, {name = key, direction = "right"})
-    lan.transmit(value, 301, {name = key, direction = "right"})
-    lan.transmit(value, 301, {name = key, direction = "left"})
-    lan.transmit(value, 301, {name = key, direction = "right"})
-end
+lan.transmit(intersections["I3"], 301, {name = "I3", direction = "left"})
+lan.transmit(intersections["I2"], 301, {name = "I2", direction = "right"})
+lan.transmit(intersections["I1"], 301, {name = "I1", direction = "right"})
+
+lan.transmit(intersections["I3"], 301, {name = "I3", direction = "left"})
+lan.transmit(intersections["I2"], 301, {name = "I2", direction = "left"})
+
+lan.transmit(intersections["I3"], 301, {name = "I3", direction = "left"})
+lan.transmit(intersections["I2"], 301, {name = "I2", direction = "right"})
+lan.transmit(intersections["I1"], 301, {name = "I1", direction = "left"})
 
 
 

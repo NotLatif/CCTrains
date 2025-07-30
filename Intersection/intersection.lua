@@ -10,8 +10,6 @@ local config = require "config"
 local Queue = require "queue"
 print("Intersection: " .. config.name)
 
-local log = fs.open("intersection.log", "w")
-
 -- find out who's the modem-modem
 local modem = peripheral.wrap("back") or print("ERROR, no station modem found (back side)")
 if modem == nil then return end
