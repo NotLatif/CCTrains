@@ -10,6 +10,8 @@ local config = require "config"
 local Queue = require "queue"
 print("Intersection: " .. config.name)
 
+local log = fs.open("intersection.log", "w")
+
 -- find out who's the modem-modem
 local modem = peripheral.wrap("back") or print("ERROR, no station modem found (back side)")
 if modem == nil then return end
@@ -46,23 +48,42 @@ while true do
 end
 
 
+local function serialize(tbl)
+    local result = "{"
+    for k, v in pairs(tbl) do
+        local key = tostring(k)
+        local value
+        if type(v) == "table" then
+            value = serialize(v)
+        elseif type(v) == "string" then
+            value = '"' .. v .. '"'
+        else
+            value = tostring(v)
+        end
+        result = result .. key .. "=" .. value .. ","
+    end
+    result = result .. "}"
+    return result:gsub("\n", "")
+end
+
+
 
 local function handleIntersection(direction)
     if direction == "left" then
-        local active = config.go_right and true or false
-        redstone.setOutput(config.relay_output, active)
-
+        if (config.signal_goes_right) then
+            redstone.setOutput(config.relay_output, false)
+        else
+            redstone.setOutput(config.relay_output, true)
+        end
     elseif direction == "right" then
-        local active
-        if config.go_right then active = false
-        else active = true end
-
-        redstone.setOutput(config.relay_output, active)
+        if (config.signal_goes_right) then
+            redstone.setOutput(config.relay_output, true)
+        else
+            redstone.setOutput(config.relay_output, false)
+        end
     else
-        print("[E] - invalid dir received from station", textutils.serialize(direction))
+        print("[E] - invalid dir received from station", serialize(direction))
     end
-
-    return
 end
 
 
@@ -75,46 +96,67 @@ while true do
 
     if e == "modem_message" then
         if message.name ~= config.name then
-            print("ERROR - received message on private communication but name did not match")
-            print("DEBUG - channel" .. ch .. " name: " .. message.name)
+            print("[E] - received message on private communication but name did not match")
+            print("[D] - channel" .. ch .. " name: " .. message.name)
+            goto continue
+        end
+
+        if not message.direction then
+            print("[E] - received message without direction")
+            print("[D] - channel" .. ch .. " message: " .. serialize(message))
             goto continue
         end
 
         --
-        print("[D] (incoming): " .. textutils.serialize(message))
+        -- print("[D] (incoming): " .. textutils.serialize(message))
         --
 
         if not minecartTraversing then
-            
             if messageQueue:size() == 0 then
-                print("bypassing queue as there is only 1 message and track is empty")
+                -- minecart might not be traversing, but since the queue is empty we set up the rail beforehand
+                -- we set minecartTraversing to true so if the cart is actually outside it does not trigger
+                -- a dequeue when it enters
+                print("{Q*}: ", serialize(message))
                 handleIntersection(message.direction)
 
                 minecartTraversing = true
             else
-                print("{Q +}: ", textutils.serialize(message))
+                -- enqueue message for the next cart
+                print("{Q+}: ", serialize(message))
                 messageQueue:enqueue(message)
             end
 
         else
-            print("{Q +}: ", textutils.serialize(message))
+            -- minecart is traversing, we enqueue the message
+            print("{Q+}: ", serialize(message))
             messageQueue:enqueue(message)
         end
 
     elseif e == "redstone" then
+        -- log.writeLine("queue" .. textutils.serialize(messageQueue))
         -- we assume there is enough time between carts so that
         -- all signals are off by the time the next cart passes
-        if not minecartTraversing then
-            if redstone.getInput(config.entry) == true then
-                minecartTraversing = true
-                message = messageQueue:dequeue()
-                print("{Q -}: ", textutils.serialize(message))
-                handleIntersection(message.direction)
-            end
+        if redstone.getInput(config.sensors.entry) == true then
+            print("  [Dr] - entry sensor triggered")
+            minecartTraversing = true
+        end
 
-            if redstone.getInput(config.left) or redstone.getInput(config.right) then
+        if minecartTraversing then
+            if redstone.getInput(config.sensors.left) == true or redstone.getInput(config.sensors.right) == true then
                 minecartTraversing = false
+    
+                -- set up track for next cart
+                if (messageQueue:isEmpty()) then
+                    print("  [Dr]: queue empty, waiting for next cart")
+                else
+                    message = messageQueue:dequeue()
+                    print("  [Dr] - setting up for next cart: ")
+                    print("{Q-}: ", serialize(message))
+                    handleIntersection(message.direction)
+                    os.sleep(0.2)  -- give time for the signals to turn off
+                end
             end
         end
+
     end
 end

@@ -1,14 +1,14 @@
 return {
-    name = nil, -- give a UNIQUE NAME (UNIQUE TO THE STATION) (can be any string)
+    name = "I2",
 
-    -- Sides where detector rails are connected (detect minecart presence)
+    -- Sides where sensors are connected (detect minecart presence)
     sensors = {
-        left = "front",    -- sensor for left rail
-        right = "back",  -- sensor for right rail
-        entry = "left",   -- sensor for entry rail
+        left = "left",    -- sensor for left rail
+        right = "front",  -- sensor for right rail
+        entry = "back",   -- sensor for entry rail
     },
 
-    go_right = false, -- is a redstone signal needed to go right?
+    signal_goes_right = false, -- does a redstone signal make the rail go to the right?
 
     -- Side where the relay output is connected (controls the rail switch)
     relay_output = "top",

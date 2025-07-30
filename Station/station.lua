@@ -118,6 +118,9 @@ for key, value in pairs(intersections) do
     lan.transmit(value, 301, {name = key, direction = "left"})
     os.sleep(1)
     lan.transmit(value, 301, {name = key, direction = "right"})
+    lan.transmit(value, 301, {name = key, direction = "right"})
+    lan.transmit(value, 301, {name = key, direction = "left"})
+    lan.transmit(value, 301, {name = key, direction = "right"})
 end
 
 
