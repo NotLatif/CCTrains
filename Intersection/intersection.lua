@@ -10,6 +10,8 @@ local config = require "config"
 local Queue = require "queue"
 print("Intersection: " .. config.name)
 
+local log = fs.open("intersection.log", "w")
+
 -- find out who's the modem-modem
 local modem = peripheral.wrap("back") or print("ERROR, no station modem found (back side)")
 if modem == nil then return end
@@ -31,7 +33,7 @@ while true do
     -- step 1
     if (message == "DISCOVERY") then
         print("< > DISCOVERY EXCHANGE")
-        modem.transmit(replyChannel, config.controller_channel, {message = "DACK", name = config.name})
+        modem.transmit(replyChannel, config.controller_channel, {message = "DACK", name = config.name, type = "intersection"})
         stationChannel = replyChannel
 
     -- step 2

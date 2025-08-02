@@ -8,12 +8,12 @@ modem.open(300)
 
 local stations = {}
 local channelCounter = 3000
-local function addStation(id, channel)
-    if not stations[id] then
-        stations[id] = channel
-        print("Station added: " .. id .. " on channel " .. channel)
+local function addStation(name, channel)
+    if not stations[name] then
+        stations[name] = channel
+        print("[+] Station: " .. name .. " (ch: " .. channel .. ")")
     else
-        print("Station " .. id .. " already exists on channel " .. stations[id])
+        print("Station " .. name .. " already exists on channel " .. stations[name])
     end
 end
 
@@ -28,16 +28,16 @@ local function discoveryHelper()
 
         local _, _, _, replyChannel, message, _ = os.pullEvent("modem_message")
     
-        if type(message) == "table" and message.message == "DACK" and message.id then
+        if type(message) == "table" and message.message == "DACK" and message.name then
             -- station responded, addStation and set channel
             discoveryTime = 3
-            print("< DACK from " .. message.name .. " (id: " .. message.id .. ") setting channel " .. channelCounter)
-            addStation(message.id, channelCounter)
-            modem.transmit(replyChannel, 300, {id = message.id, channel = channelCounter, message = "SETCHANNEL"})
+            print("< DACK from " .. message.name .. " (name: " .. message.name .. ") setting channel " .. channelCounter)
+            addStation(message.name, channelCounter)
+            modem.transmit(replyChannel, 300, {name = message.name, channel = channelCounter, message = "SETCHANNEL"})
             channelCounter = channelCounter + 1
         end
 
-        os.sleep(0.05)
+        os.sleep(0.1)
 
     end
 end
@@ -67,4 +67,19 @@ end
 
 discoverStations()
 
+os.sleep(3) -- wait for stations to finish setting up
+
+-- testing
+print("Sending message to S1, ", stations["S1"])
+modem.transmit(stations["S1"], 300, {name = "S1", type = "arr", from = "SC", to = "S2", eta = 10, stops = {"NT", "Farm", "Base Aiello"}})
+
+os.sleep(2)
+modem.transmit(stations["S1"], 300, {name = "S1", type = "arr", from = "SC", to = "S2", eta = 10, stops = {}})
+
+os.sleep(2)
+modem.transmit(stations["S1"], 300, {name = "S1", type = "arr", from = "SC", to = "S2", eta = 10, stops = {}})
+
 -- load routing table
+-- while true do
+--     os.sleep(1)
+-- end
